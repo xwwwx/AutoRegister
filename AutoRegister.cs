@@ -27,19 +27,19 @@ namespace AutoRegister
                 var lifeTime = lifeTimeAttr.lifetime;
 
                 //建立介面及實體的對應ServiceDescriptor
-                var serviceDescriptors = 
+                var serviceDescriptors =
                     implType.GetInterfaces()?
-                    .Select(service => {
+                    .Select(service =>
+                    {
                         return new ServiceDescriptor(service, implType, lifeTime);
-                    })
-                    .ToList();
-
-                //建立實體對應ServiceDescriptor
-                serviceDescriptors.Add(new ServiceDescriptor(implType, implType, lifeTime));
+                    });
 
                 //將serviceDescriptors加入services
                 foreach (ServiceDescriptor serviceDescriptor in serviceDescriptors)
                     services.Add(serviceDescriptor);
+
+                //建立實體對應ServiceDescriptor
+                services.Add(new ServiceDescriptor(implType, implType, lifeTime));
 
                 //紀錄已註冊Type
                 registedType.Add(implType);
