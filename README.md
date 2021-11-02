@@ -14,7 +14,7 @@
 
 ## 生命週期
 
-1.用以下屬屬性為實體設定生命週期
+1.用以下屬性為實體設定生命週期
 * SingletonAttribute
 * ScopedAttribute
 * TransientAttribute
