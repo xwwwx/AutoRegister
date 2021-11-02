@@ -15,45 +15,46 @@ namespace AutoRegister
             foreach (Type implType in types)
             {
                 var service = implType.GetInterfaces().SingleOrDefault(type => type.Name.Contains(implType.Name));
-                var impl = implType;
-                if (service != null && impl != null)
+                if (implType != null)
                 {
-                    var lifeTimeAttr = (LifeTimeAttribute)Attribute.GetCustomAttribute(impl, typeof(LifeTimeAttribute));
+                    if (service == null)
+                        service = implType;
+                    var lifeTimeAttr = (LifeTimeAttribute)Attribute.GetCustomAttribute(implType, typeof(LifeTimeAttribute));
                     var lifeTime = lifeTimeAttr != null ? lifeTimeAttr.lifetime : ServiceLifetime.Singleton;
-                    services.TryAdd(new ServiceDescriptor(service, impl, lifeTime));
+                    services.TryAdd(new ServiceDescriptor(service, implType, lifeTime));
                 }
             }
         }
 
-        public static void RegisteFromExecutingAssembly(IServiceCollection services, Predicate<Type> typePredicate)
+        public static void RegisteFromEntryAssembly(IServiceCollection services, Predicate<Type> typePredicate)
         {
             Registe(services,
-                Assembly.GetExecutingAssembly()
+                Assembly.GetEntryAssembly()
                 .GetTypes()
                 .Where(type => typePredicate(type)));
         }
 
         public static void RegisteService(IServiceCollection services)
         {
-            RegisteFromExecutingAssembly(services,
+            RegisteFromEntryAssembly(services,
                 type => type.FullName.EndsWith("Service") && type.IsClass);
 
-            RegisteFromExecutingAssembly(services,
+            RegisteFromEntryAssembly(services,
                 type => Attribute.IsDefined(type, typeof(ServiceAttribute)));
         }
 
         public static void RegisteRepository(IServiceCollection services)
         {
-            RegisteFromExecutingAssembly(services,
+            RegisteFromEntryAssembly(services,
                 type => type.FullName.EndsWith("Repository") && type.IsClass);
 
-            RegisteFromExecutingAssembly(services,
+            RegisteFromEntryAssembly(services,
                 type => Attribute.IsDefined(type, typeof(RepositoryAttribute)));
         }
 
         public static void RegisteComponent(IServiceCollection services)
         {
-            RegisteFromExecutingAssembly(services,
+            RegisteFromEntryAssembly(services,
                 type => Attribute.IsDefined(type, typeof(ComponentAttribute)));
         }
 
