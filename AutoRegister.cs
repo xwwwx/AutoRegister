@@ -47,16 +47,29 @@ namespace AutoRegister
         }
 
         /// <summary>
+        /// 註冊 Assembly 內，並 Predicate<Type> 回傳為 True 的 Type
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="assembly"></param>
+        /// <param name="typePredicate"></param>
+        public static void RegisteFromAssembly(IServiceCollection services, Assembly assembly, Predicate<Type> typePredicate)
+        {
+            Registe(services,
+                assembly
+                .GetTypes()
+                .Where(type => typePredicate(type)));
+        }
+
+        /// <summary>
         /// 註冊 Assembly.GetEntryAssembly 內，並 Predicate<Type> 回傳為 True 的 Type
         /// </summary>
         /// <param name="services"></param>
         /// <param name="typePredicate"></param>
         public static void RegisteFromEntryAssembly(IServiceCollection services, Predicate<Type> typePredicate)
         {
-            Registe(services,
-                Assembly.GetEntryAssembly()
-                .GetTypes()
-                .Where(type => typePredicate(type)));
+            RegisteFromAssembly(services,
+                Assembly.GetEntryAssembly(),
+                typePredicate);
         }
 
         /// <summary>
