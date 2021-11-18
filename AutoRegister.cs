@@ -31,7 +31,7 @@ namespace AutoRegister
                     implType.GetInterfaces()?
                     .Select(service =>
                     {
-                        return new ServiceDescriptor(service, implType, lifeTime);
+                        return BuildServiceDescriptor(service, implType, lifeTime);
                     });
 
                 //將serviceDescriptors加入services
@@ -39,7 +39,7 @@ namespace AutoRegister
                     services.Add(serviceDescriptor);
 
                 //建立實體對應ServiceDescriptor
-                services.Add(new ServiceDescriptor(implType, implType, lifeTime));
+                services.Add(BuildServiceDescriptor(implType, implType, lifeTime));
 
                 //紀錄已註冊Type
                 registedType.Add(implType);
@@ -119,6 +119,37 @@ namespace AutoRegister
             RegisteService(services);
 
             RegisteRepository(services);
+        }
+
+        private static ServiceDescriptor BuildServiceDescriptor(Type service, Type implType, ServiceLifetime lifetime)
+        {
+            Func<IServiceProvider, object> factory = (serviceProvider) => {
+
+                var con = implType.GetConstructors().Single();
+                var conParams = con.GetParameters();
+                var conParamObjects = new object[conParams.Length];
+                
+                for(int i = 0; i < conParamObjects.Length; i++)
+                {
+                    conParamObjects[i] = serviceProvider.GetRequiredService(conParams[i].ParameterType);
+                }
+
+                object impl = Activator.CreateInstance(implType, conParamObjects);
+
+                BindingFlags bindFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
+        |           BindingFlags.Static;
+                var fields = implType.GetFields(bindFlags).Where(field => Attribute.IsDefined(field, typeof(AutoWiredAttribute)));
+
+                foreach(FieldInfo field in fields)
+                {
+                    object fieldImpl = serviceProvider.GetRequiredService(field.FieldType);
+                    field.SetValue(impl, fieldImpl);
+                }
+
+                return impl;
+            };
+
+            return new ServiceDescriptor(service, factory, lifetime);
         }
     }
 }
