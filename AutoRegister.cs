@@ -123,8 +123,12 @@ namespace AutoRegister
 
         private static ServiceDescriptor BuildServiceDescriptor(Type service, Type implType, ServiceLifetime lifetime)
         {
+            //Factory
             Func<IServiceProvider, object> factory = (serviceProvider) => {
 
+                #region 建構子注入
+
+                //限單一建構子
                 var con = implType.GetConstructors().Single();
                 var conParams = con.GetParameters();
                 var conParamObjects = new object[conParams.Length];
@@ -134,17 +138,30 @@ namespace AutoRegister
                     conParamObjects[i] = serviceProvider.GetRequiredService(conParams[i].ParameterType);
                 }
 
+                //建立實體
                 object impl = Activator.CreateInstance(implType, conParamObjects);
+                #endregion
 
-                BindingFlags bindFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
-        |           BindingFlags.Static;
+                #region Field注入
+
+                //取得含 AutoWired 屬性的 Field
+                BindingFlags bindFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                    BindingFlags.Static;
                 var fields = implType.GetFields(bindFlags).Where(field => Attribute.IsDefined(field, typeof(AutoWiredAttribute)));
 
                 foreach(FieldInfo field in fields)
                 {
+                    //避免靜態Field被重新賦值
+                    if (field.IsStatic)
+                    {
+                        if (field.GetValue(impl) != null)
+                            continue;
+                    }
+
                     object fieldImpl = serviceProvider.GetRequiredService(field.FieldType);
                     field.SetValue(impl, fieldImpl);
                 }
+                #endregion
 
                 return impl;
             };
